@@ -10,7 +10,9 @@ from .interval import IntervalUnion
 from .project import Project
 from .user import User
 from .pipeline import Pipeline
+from . import gitlab
 
+GET, POST, PUT, DELETE = gitlab.GET, gitlab.POST, gitlab.PUT, gitlab.DELETE
 
 class MergeJob(object):
 
@@ -245,6 +247,26 @@ class MergeJob(object):
         assert source_repo_url != repo.remote_url
         if source_repo_url is None and source_branch == target_branch:
             raise CannotMerge('source and target branch seem to coincide!')
+
+        use_rebase_api = True
+        if use_rebase_api:
+            log.debug('Rebasing with the native GitLab API')
+            self._api.call(PUT('/projects/{project_id}/merge_requests/{mr_id}/rebase'.format(
+                project_id=merge_request.project_id, mr_id=merge_request.iid), {}))
+            for i in range(100):
+                log.debug('Checking whether rebase has finished...')
+                resp = self._api.call(GET('/projects/{project_id}/merge_requests/{mr_id}'.format(project_id=merge_request.project_id, mr_id=merge_request.iid),
+                                          { 'include_rebase_in_progress': True}))
+                if not resp['rebase_in_progress']:
+                    if resp['merge_error'] is not None:
+                        raise CannotMerge('error during rebase: {}'.format(resp['merge_error']))
+                    else:
+                        target_sha = repo.get_commit_hash('origin/' + target_branch)
+                        new_sha = resp['sha']
+                        log.debug('Rebase finished producing new SHA {}'.format(new_sha))
+                        return (target_sha, new_sha, new_sha)
+
+            raise CannotMerge('rebase never concluded')
 
         branch_updated = branch_rewritten = changes_pushed = False
         try:
