@@ -3,7 +3,7 @@ let
   pkgs = import (fetchFromGitHub {
                    owner  = "NixOS";
                    repo   = "nixpkgs";
-                   rev    = "90afb0c10fe6f437fca498298747b2bcb6a77d39";
-                   sha256 = "0mvzdw5aygi1vjnvm0bc8bp7iwb9rypiqg749m6a6km84m7srm0w";
+                   rev    = "74b7aae3afde80f4627ae92a695073e167ccc39a";
+                   sha256 = "13qn5knvyiifrs8hjhbvcl2fddqz3gxniwlm598hxcmkfdxal9k1";
                  }) {};
 in pkgs
