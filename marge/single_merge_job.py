@@ -6,6 +6,7 @@ from datetime import datetime
 from . import git, gitlab
 from .commit import Commit
 from .job import CannotMerge, MergeJob, SkipMerge
+from .project import Project
 
 
 class SingleMergeJob(MergeJob):
@@ -43,9 +44,14 @@ class SingleMergeJob(MergeJob):
     def update_merge_request_and_accept(self, approvals):
         api = self._api
         merge_request = self._merge_request
+        target_project = Project.fetch_by_id(merge_request.target_project_id, api=api)
         updated_into_up_to_date_target_branch = False
 
         while not updated_into_up_to_date_target_branch:
+            if target_project.only_allow_merge_if_pipeline_succeeds:
+                self.wait_for_ci_to_pass(merge_request, merge_request.sha)
+                time.sleep(2)
+
             self.ensure_mergeable_mr(merge_request)
             source_project, source_repo_url, _ = self.fetch_source_project(merge_request)
             # NB. this will be a no-op if there is nothing to update/rewrite
@@ -65,7 +71,7 @@ class SingleMergeJob(MergeJob):
 
             self.maybe_reapprove(merge_request, approvals)
 
-            if source_project.only_allow_merge_if_pipeline_succeeds:
+            if target_project.only_allow_merge_if_pipeline_succeeds:
                 self.wait_for_ci_to_pass(merge_request, actual_sha)
                 time.sleep(2)
 
