@@ -16,6 +16,14 @@ let
 
 in self: super: {
 
+  "astroid" = python.overrideDerivation super."astroid" (old: {
+    buildInputs = old.buildInputs ++ [ self."pytest-runner" ];
+  });
+
+  "py" = python.overrideDerivation super."py" (old: {
+    buildInputs = old.buildInputs ++ [ self."setuptools-scm" ];
+  });
+
   # From default overrides
   "mccabe" = python.overrideDerivation super."mccabe" (old: {
     buildInputs = old.buildInputs ++ [ self."pytest-runner" ];
