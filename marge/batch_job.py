@@ -217,7 +217,7 @@ class BatchMergeJob(MergeJob):
                 # We don't need <source_branch> anymore. Remove it now in case another
                 # merge request is using the same branch name in a different project.
                 # FIXME: is this actually needed?
-                self._repo.remove_branch(merge_request.source_branch)
+                #self._repo.remove_branch(merge_request.source_branch)
             except git.GitError:
                 log.warning('Skipping MR !%s, got conflicts while rebasing', merge_request.iid)
                 continue
