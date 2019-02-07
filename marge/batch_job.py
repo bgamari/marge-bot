@@ -141,10 +141,21 @@ class BatchMergeJob(MergeJob):
         # it's a little weird to look at the merged MR to find it has no approvals, so let's do it anyway.
         self.maybe_reapprove(merge_request, approvals)
 
+        # update_from_target_branch_and_push rebased using the gitlab API
+        # but now  we have to refetch the remote to get the changes
+        # and update the local branch.
+        _, source_repo_url, merge_request_remote = self.fetch_source_project(merge_request)
+        self._repo.remove_branch(merge_request.source_branch)
+        self._repo.checkout_branch(
+            merge_request.source_branch,
+            '%s/%s' % (merge_request_remote, merge_request.source_branch),
+        )
+
         # This switches git to <target_branch>
         final_sha = self._repo.fast_forward(
             merge_request.target_branch,
             merge_request.source_branch,
+            local=True
         )
 
         # Don't force push in case the remote has changed.
