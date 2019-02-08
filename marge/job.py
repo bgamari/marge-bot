@@ -137,7 +137,7 @@ class MergeJob(object):
 
     def wait_for_ci_to_pass(self, merge_request, commit_sha=None):
         time_0 = datetime.utcnow()
-        waiting_time_in_secs = 10
+        waiting_time_in_secs = 60
 
         if commit_sha is None:
             commit_sha = merge_request.sha
