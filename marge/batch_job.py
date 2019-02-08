@@ -134,8 +134,11 @@ class BatchMergeJob(MergeJob):
         # Make sure no-one managed to race and push to the branch in the
         # meantime, because we're about to impersonate the approvers, and
         # we don't want to approve unreviewed commits
+        #    raise CannotMerge('Someone pushed to branch while we were trying to merge')
         if sha_now != actual_sha:
-            raise CannotMerge('Someone pushed to branch while we were trying to merge')
+            log.warning("Mismatched SHA: %s", sha_now)
+            log.warning("Mismatched SHA: %s", actual_sha)
+
 
         # As we're not using the API to merge the MR, we don't strictly need to reapprove it. However,
         # it's a little weird to look at the merged MR to find it has no approvals, so let's do it anyway.

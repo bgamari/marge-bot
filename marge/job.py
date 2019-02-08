@@ -250,7 +250,7 @@ class MergeJob(object):
 
         use_rebase_api = True
         if use_rebase_api:
-            log.debug('Rebasing with the native GitLab API')
+            log.info('Rebasing with the native GitLab API')
             self._api.call(PUT('/projects/{project_id}/merge_requests/{mr_id}/rebase'.format(
                 project_id=merge_request.project_id, mr_id=merge_request.iid), {}))
             for i in range(100):
@@ -263,7 +263,7 @@ class MergeJob(object):
                     else:
                         target_sha = repo.get_commit_hash('origin/' + target_branch)
                         new_sha = resp['sha']
-                        log.debug('Rebase finished producing new SHA {}'.format(new_sha))
+                        log.info('Rebase finished producing new SHA {}'.format(new_sha))
                         return (target_sha, new_sha, new_sha)
 
             raise CannotMerge('rebase never concluded')
