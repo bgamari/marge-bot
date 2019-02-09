@@ -255,6 +255,7 @@ class MergeJob(object):
                 project_id=merge_request.project_id, mr_id=merge_request.iid), {}))
             for i in range(100):
                 log.debug('Checking whether rebase has finished...')
+                time.sleep(1)
                 resp = self._api.call(GET('/projects/{project_id}/merge_requests/{mr_id}'.format(project_id=merge_request.project_id, mr_id=merge_request.iid),
                                           { 'include_rebase_in_progress': True}))
                 if not resp['rebase_in_progress']:
@@ -264,6 +265,10 @@ class MergeJob(object):
                         target_sha = repo.get_commit_hash('origin/' + target_branch)
                         new_sha = resp['sha']
                         log.info('Rebase finished producing new SHA {}'.format(new_sha))
+                        # Sleep here to avoid potential race condition where the
+                        # Rebase API reports success but the change is not propagated
+                        # to the branch yet.
+                        time.sleep(5)
                         return (target_sha, new_sha, new_sha)
 
             raise CannotMerge('rebase never concluded')
