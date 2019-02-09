@@ -150,9 +150,10 @@ class Bot(object):
                 log.warning('BatchMergeJob aborted: %s', err)
             except batch_job.CannotMerge as err:
                 log.warning('BatchMergeJob failed: %s', err)
-                return
+                raise
             except git.GitError as err:
                 log.exception('BatchMergeJob failed: %s', err)
+                raise
 
     def _get_single_job(self, project, merge_request, repo, options):
         return single_merge_job.SingleMergeJob(
