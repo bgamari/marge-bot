@@ -148,6 +148,8 @@ class BatchMergeJob(MergeJob):
         # but now  we have to refetch the remote to get the changes
         # and update the local branch.
         _, source_repo_url, merge_request_remote = self.fetch_source_project(merge_request)
+        # For some reason, the fetch_source_project method doesn't fetch origin
+        self._repo.fetch('origin')
         self._repo.remove_branch(merge_request.source_branch)
         self._repo.checkout_branch(
             merge_request.source_branch,
