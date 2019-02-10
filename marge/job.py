@@ -268,7 +268,8 @@ class MergeJob(object):
                         # Sleep here to avoid potential race condition where the
                         # Rebase API reports success but the change is not propagated
                         # to the branch yet.
-                        time.sleep(5)
+                        log.info('Sleeping for 120 seconds to give remotes time to update')
+                        time.sleep(120)
                         return (target_sha, new_sha, new_sha)
 
             raise CannotMerge('rebase never concluded')
