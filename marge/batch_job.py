@@ -171,6 +171,16 @@ class BatchMergeJob(MergeJob):
         # At this point Gitlab should have recognised the MR as being accepted.
         log.info('Successfully merged MR !%s', merge_request.iid)
 
+        # Gitlab API has no way to query pending/running pipelines
+        pipelines = Pipeline.pipelines_by_branch(
+            api=self._api,
+            project_id=merge_request.source_project_id,
+            branch=merge_request.source_branch,
+            status='pending',
+        )
+        for pipeline in pipelines:
+            pipeline.cancel()
+
         pipelines = Pipeline.pipelines_by_branch(
             api=self._api,
             project_id=merge_request.source_project_id,
