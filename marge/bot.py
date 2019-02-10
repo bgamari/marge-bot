@@ -51,7 +51,7 @@ class Bot(object):
 
     def _run(self, repo_manager):
         time_to_sleep_between_projects_in_secs = 1
-        min_time_to_sleep_after_iterating_all_projects_in_secs = 30
+        min_time_to_sleep_after_iterating_all_projects_in_secs = 30*60
         while True:
             projects = self._get_projects()
             self._process_projects(
