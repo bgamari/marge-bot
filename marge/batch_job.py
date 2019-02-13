@@ -73,7 +73,7 @@ class BatchMergeJob(MergeJob):
 
         if self._project.only_allow_merge_if_pipeline_succeeds:
             ci_status = self.get_mr_ci_status(merge_request)
-            if ci_status != 'success':
+            if ci_status != 'success' and ci_status != 'skipped':
                 raise CannotBatch('This MR has not passed CI.')
 
     def get_mergeable_mrs(self, merge_requests):
