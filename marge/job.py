@@ -137,7 +137,7 @@ class MergeJob(object):
 
     def wait_for_ci_to_pass(self, merge_request, commit_sha=None):
         time_0 = datetime.utcnow()
-        waiting_time_in_secs = 60
+        waiting_time_in_secs = 600
 
         if commit_sha is None:
             commit_sha = merge_request.sha
@@ -188,7 +188,7 @@ class MergeJob(object):
                 return merge_request.fetch_approvals().sufficient
             # Make sure we don't race by ensuring approvals have reset since the push
             time_0 = datetime.utcnow()
-            waiting_time_in_secs = 5
+            waiting_time_in_secs = 60
             log.info('Checking if approvals have reset')
             while sufficient_approvals() and datetime.utcnow() - time_0 < self._options.approval_timeout:
                 log.debug('Approvals haven\'t reset yet, sleeping for %s secs', waiting_time_in_secs)
@@ -255,7 +255,7 @@ class MergeJob(object):
                 project_id=merge_request.project_id, mr_id=merge_request.iid), {}))
             for i in range(100):
                 log.debug('Checking whether rebase has finished...')
-                time.sleep(1)
+                time.sleep(60)
                 resp = self._api.call(GET('/projects/{project_id}/merge_requests/{mr_id}'.format(project_id=merge_request.project_id, mr_id=merge_request.iid),
                                           { 'include_rebase_in_progress': True}))
                 if not resp['rebase_in_progress']:
@@ -268,8 +268,8 @@ class MergeJob(object):
                         # Sleep here to avoid potential race condition where the
                         # Rebase API reports success but the change is not propagated
                         # to the branch yet.
-                        log.info('Sleeping for 120 seconds to give remotes time to update')
-                        time.sleep(120)
+                        log.info('Sleeping for 300 seconds to give remotes time to update')
+                        time.sleep(300)
                         return (target_sha, new_sha, new_sha)
 
             raise CannotMerge('rebase never concluded')
