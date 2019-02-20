@@ -131,15 +131,18 @@ class Bot(object):
         except git.GitError:
             log.exception("Couldn't initialize repository for project!")
             raise
-
         log.info('Got %s requests to merge;', len(merge_requests))
-        if self._config.batch and len(merge_requests) > 1:
+        merge_first = [mr for mr in merge_requests if "merge_first" in mr.labels]
+        log.info('Got %s requests to merge first;', len(merge_first))
+        new_merge_requests = [merge_first[0]] if merge_first else merge_requests
+        # If we have a merge_first job then do it on its own
+        if self._config.batch and (len(new_merge_requests) > 1 or len(merge_first) >= 1:
             log.info('Attempting to merge as many MRs as possible using BatchMergeJob...')
             batch_merge_job = batch_job.BatchMergeJob(
                 api=self._api,
                 user=self.user,
                 project=project,
-                merge_requests=merge_requests,
+                merge_requests=new_merge_requests,
                 repo=repo,
                 options=self._config.merge_opts,
             )
