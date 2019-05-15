@@ -269,7 +269,7 @@ class MergeJob(object):
                         # Rebase API reports success but the change is not propagated
                         # to the branch yet.
                         log.info('Sleeping for 300 seconds to give remotes time to update')
-                        time.sleep(300)
+                        time.sleep(150)
                         return (target_sha, new_sha, new_sha)
 
             raise CannotMerge('rebase never concluded')
