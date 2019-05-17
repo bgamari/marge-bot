@@ -31,6 +31,28 @@ class Pipeline(gitlab.Resource):
 
         return [cls(api, pipeline_info, project_id) for pipeline_info in pipelines_info]
 
+    @classmethod
+    def pipelines_by_sha(
+            cls, project_id, sha, api, *,
+            ref=None,
+            status=None,
+            order_by='id',
+            sort='desc',
+    ):
+        params = {
+            'sha': sha,
+            'order_by': order_by,
+            'sort': sort,
+        }
+        if status is not None:
+            params['status'] = status
+        pipelines_info = api.call(GET(
+            '/projects/{project_id}/pipelines'.format(project_id=project_id),
+            params,
+        ))
+
+        return [cls(api, pipeline_info, project_id) for pipeline_info in pipelines_info]
+
     @property
     def project_id(self):
         return self.info['project_id']
