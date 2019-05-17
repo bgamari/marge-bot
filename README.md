@@ -233,7 +233,7 @@ docker run --restart=on-failure \
   --config-file=/configuration/marge-bot-config.yaml
 ```
 
-By default docker will use the `latest` tag, which corresponds to the latest
+By default docker will use the `latest` tag, which corresponds to the latest 
 stable version. You can also use the `stable` tag to make this more explicit.
 If you want a development version, you can use the `master` tag to obtain an
 image built from the HEAD commit of the `master` branch. Note that this image
@@ -390,12 +390,6 @@ If CI passes, the original merge requests will be merged one by one.
 
 If the batch job fails for any reason, we fall back to merging the first merge
 request, before attempting a new batch job.
-
-If a job is assigned the `merge_first` label then it will be attempted to be
-batched on its own, first. If there are multiple jobs with `merge_first` labels
-then they are batched one by one until there are no `merge_first` jobs left.
-This is useful if there is a big patch which has a high chance of causing
-merge conflicts.
 
 ### Limitations
 

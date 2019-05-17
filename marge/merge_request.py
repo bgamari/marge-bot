@@ -60,10 +60,6 @@ class MergeRequest(gitlab.Resource):
         return self.info['state']
 
     @property
-    def labels(self):
-        return self.info['labels']
-
-    @property
     def assignee_id(self):
         assignee = self.info['assignee'] or {}
         return assignee.get('id')
