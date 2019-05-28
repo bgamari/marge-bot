@@ -250,29 +250,45 @@ class MergeJob(object):
 
         use_rebase_api = True
         if use_rebase_api:
-            log.info('Rebasing with the native GitLab API')
-            self._api.call(PUT('/projects/{project_id}/merge_requests/{mr_id}/rebase'.format(
-                project_id=merge_request.project_id, mr_id=merge_request.iid), {}))
-            for i in range(100):
-                log.debug('Checking whether rebase has finished...')
-                time.sleep(60)
-                resp = self._api.call(GET('/projects/{project_id}/merge_requests/{mr_id}'.format(project_id=merge_request.project_id, mr_id=merge_request.iid),
-                                          { 'include_rebase_in_progress': True}))
-                if not resp['rebase_in_progress']:
-                    if resp['merge_error'] is not None:
-                        raise CannotMerge('error during rebase: {}'.format(resp['merge_error']))
-                    else:
-                        target_sha = repo.get_commit_hash('origin/' + target_branch)
-                        new_sha = resp['sha']
-                        log.info('Rebase finished producing new SHA {}'.format(new_sha))
-                        # Sleep here to avoid potential race condition where the
-                        # Rebase API reports success but the change is not propagated
-                        # to the branch yet.
-                        log.info('Sleeping for 300 seconds to give remotes time to update')
-                        time.sleep(150)
-                        return (target_sha, new_sha, new_sha)
-
-            raise CannotMerge('rebase never concluded')
+            attempts = 0
+            while attempts < 2:
+              attempts += 1
+              log.info('Rebasing with the native GitLab API')
+              self._api.call(PUT('/projects/{project_id}/merge_requests/{mr_id}/rebase'.format(
+                  project_id=merge_request.project_id, mr_id=merge_request.iid), {}))
+              for i in range(100):
+                  log.debug('Checking whether rebase has finished...')
+                  time.sleep(60)
+                  # Gitlab can throw 500s whilst gitaly is restarting, as this method is polled we retry it if it fails with a 500
+                  try:
+                    resp = self._api.call(GET('/projects/{project_id}/merge_requests/{mr_id}'.format(project_id=merge_request.project_id, mr_id=merge_request.iid),
+                                                { 'include_rebase_in_progress': True}))
+                  except InternalServerError:
+                    log.info('Internal server error, skipping iteration')
+                    continue
+                  if not resp['rebase_in_progress']:
+                      if resp['merge_error'] is not None:
+                          # Rebase error is usually because gitaly restarts whist rebase is happening, so just retry once
+                          if attempts < 2:
+                            # Break loop and try again, after waiting to give gitaly some time to restart
+                            time.sleep(60)
+                            break   
+                          else:
+                            # OK, two attempts and still broken. Time to error
+                            raise CannotMerge('error during rebase: {}'.format(resp['merge_error']))
+                      else:
+                          target_sha = repo.get_commit_hash('origin/' + target_branch)
+                          new_sha = resp['sha']
+                          log.info('Rebase finished producing new SHA {}'.format(new_sha))
+                          # Sleep here to avoid potential race condition where the
+                          # Rebase API reports success but the change is not propagated
+                          # to the branch yet.
+                          log.info('Sleeping for 150 seconds to give remotes time to update')
+                          time.sleep(150)
+                          return (target_sha, new_sha, new_sha)
+              else:
+                # else clause is triggered if natural control flow reaches here.
+                raise CannotMerge('rebase never concluded')
 
         branch_updated = branch_rewritten = changes_pushed = False
         try:
