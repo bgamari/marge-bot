@@ -123,21 +123,21 @@ class BatchMergeJob(MergeJob):
             raise CannotBatch('Someone was naughty and by-passed marge')
 
         # FIXME: we should only add tested-by for the last MR in the batch
-        _, _, actual_sha = self.update_from_target_branch_and_push(
-            merge_request,
-            source_repo_url=source_repo_url,
-        )
+        #_, _, actual_sha = self.update_from_target_branch_and_push(
+        #    merge_request,
+        #    source_repo_url=source_repo_url,
+        #)
 
-        sha_now = Commit.last_on_branch(
-            merge_request.source_project_id, merge_request.source_branch, self._api,
-        ).id
+        #sha_now = Commit.last_on_branch(
+        #    merge_request.source_project_id, merge_request.source_branch, self._api,
+        #).id
         # Make sure no-one managed to race and push to the branch in the
         # meantime, because we're about to impersonate the approvers, and
         # we don't want to approve unreviewed commits
         #    raise CannotMerge('Someone pushed to branch while we were trying to merge')
-        if sha_now != actual_sha:
-            log.warning('Mismatched SHA: %s', sha_now)
-            log.warning('Mismatched SHA: %s', actual_sha)
+        #if sha_now != actual_sha:
+        #    log.warning('Mismatched SHA: %s', sha_now)
+        #    log.warning('Mismatched SHA: %s', actual_sha)
 
 
         # As we're not using the API to merge the MR, we don't strictly need to reapprove it. However,
@@ -156,6 +156,14 @@ class BatchMergeJob(MergeJob):
             '%s/%s' % (merge_request_remote, merge_request.source_branch),
         )
 
+        # Rebase source branch onto target branch
+        self.fuse(
+            merge_request.source_branch,
+            merge_request.target_branch,
+            source_repo_url=source_repo_url,
+            local=True,
+        )
+
         # This switches git to <target_branch>
         final_sha = self._repo.fast_forward(
             merge_request.target_branch,
@@ -170,25 +178,27 @@ class BatchMergeJob(MergeJob):
 
         # At this point Gitlab should have recognised the MR as being accepted.
         log.info('Successfully merged MR !%s', merge_request.iid)
+        merge_request.comment('Merged in !%s (%s)' % (merge_request.iid, final_sha))
+        merge_request.close()
 
         # Gitlab API has no way to query pending/running pipelines
-        pipelines = Pipeline.pipelines_by_branch(
-            api=self._api,
-            project_id=merge_request.source_project_id,
-            branch=merge_request.source_branch,
-            status='pending',
-        )
-        for pipeline in pipelines:
-            pipeline.cancel()
+        #pipelines = Pipeline.pipelines_by_branch(
+        #    api=self._api,
+        #    project_id=merge_request.source_project_id,
+        #    branch=merge_request.source_branch,
+        #    status='pending',
+        #)
+        #for pipeline in pipelines:
+        #    pipeline.cancel()
 
-        pipelines = Pipeline.pipelines_by_branch(
-            api=self._api,
-            project_id=merge_request.source_project_id,
-            branch=merge_request.source_branch,
-            status='running',
-        )
-        for pipeline in pipelines:
-            pipeline.cancel()
+        #pipelines = Pipeline.pipelines_by_branch(
+        #    api=self._api,
+        #    project_id=merge_request.source_project_id,
+        #    branch=merge_request.source_branch,
+        #    status='running',
+        #)
+        #for pipeline in pipelines:
+        #    pipeline.cancel()
 
         return final_sha
 
