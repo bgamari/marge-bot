@@ -75,13 +75,14 @@ class BatchMergeJob(MergeJob):
             ci_status = self.get_mr_ci_status(merge_request)
             if ci_status != 'success' and ci_status != 'skipped':
                 raise CannotBatch('This MR has not passed CI.')
+            return ci_status
 
     def get_mergeable_mrs(self, merge_requests):
         log.info('Filtering mergeable MRs')
         mergeable_mrs = []
         for merge_request in merge_requests:
             try:
-                self.ensure_mergeable_mr(merge_request)
+                ci_status = self.ensure_mergeable_mr(merge_request)
             except (CannotBatch, SkipMerge) as ex:
                 log.warning('Skipping unbatchable MR: "%s"', ex)
             except CannotMerge as ex:
@@ -89,7 +90,13 @@ class BatchMergeJob(MergeJob):
                 self.unassign_from_mr(merge_request)
                 merge_request.comment("I couldn't merge this branch: {}".format(ex))
             else:
-                mergeable_mrs.append(merge_request)
+                # Put the MRs with skipped CI at the front so that CI for the whole
+                # batch isn't skipped. If they have all skipped CI then skipping CI for
+                # the batch is OK.
+                if ci_status == 'success':
+                    mergeable_mrs.append(merge_request)
+                else: # ci_status == 'skipped'
+                    mergeable_mrs.insert(0,merge_request)
         return mergeable_mrs
 
     def push_batch(self):
