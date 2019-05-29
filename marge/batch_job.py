@@ -180,6 +180,8 @@ class BatchMergeJob(MergeJob):
         log.info('Successfully merged MR !%s', merge_request.iid)
         merge_request.comment('Merged in !%s (%s)' % (merge_request.iid, final_sha))
         merge_request.close()
+        log.info('Sleeping 30s for good luck')
+        sleep(30)
 
         # Gitlab API has no way to query pending/running pipelines
         #pipelines = Pipeline.pipelines_by_branch(

@@ -143,24 +143,30 @@ class MergeJob(object):
             commit_sha = merge_request.sha
 
         log.info('Waiting for CI to pass for MR !%s', merge_request.iid)
+        log.info('Sleeping for 5 hours, CI will take at least this long')
+        time.sleep(60 * 60 * 5)
         while datetime.utcnow() - time_0 < self._options.ci_timeout:
-            ci_status = self.get_mr_ci_status(merge_request, commit_sha=commit_sha)
-            if ci_status == 'success':
-                log.info('CI for MR !%s passed', merge_request.iid)
-                return
+            try:
+                ci_status = self.get_mr_ci_status(merge_request, commit_sha=commit_sha)
+            except InternalServerError:
+                log.info('500 error when polling CI status, ignoring')
+            else:
+                if ci_status == 'success':
+                    log.info('CI for MR !%s passed', merge_request.iid)
+                    return
 
-            if ci_status == 'skipped':
-                log.info('CI for MR !%s skipped', merge_request.iid)
-                return
+                if ci_status == 'skipped':
+                    log.info('CI for MR !%s skipped', merge_request.iid)
+                    return
 
-            if ci_status == 'failed':
-                raise CannotMerge('CI failed!')
+                if ci_status == 'failed':
+                    raise CannotMerge('CI failed!')
 
-            if ci_status == 'canceled':
-                raise CannotMerge('Someone canceled the CI.')
+                if ci_status == 'canceled':
+                    raise CannotMerge('Someone canceled the CI.')
 
-            if ci_status not in ('pending', 'running'):
-                log.warning('Suspicious CI status: %r', ci_status)
+                if ci_status not in ('pending', 'running'):
+                    log.warning('Suspicious CI status: %r', ci_status)
 
             log.debug('Waiting for %s secs before polling CI status again', waiting_time_in_secs)
             time.sleep(waiting_time_in_secs)
