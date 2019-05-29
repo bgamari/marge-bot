@@ -178,7 +178,7 @@ class BatchMergeJob(MergeJob):
 
         # At this point Gitlab should have recognised the MR as being accepted.
         log.info('Successfully merged MR !%s', merge_request.iid)
-        merge_request.comment('Merged in !%s (%s)' % (merge_request.iid, final_sha))
+        merge_request.comment('Merged in %s' % final_sha)
         merge_request.close()
         log.info('Sleeping 30s for good luck')
         sleep(30)
